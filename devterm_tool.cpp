@@ -13,6 +13,7 @@
 #include <map>
 #include <numeric>
 #include <sstream>
+#include <stack>
 #include <string>
 #include <vector>
 
@@ -60,6 +61,10 @@ String string_replace(String &str, typename String::value_type from, const Strin
 	if (start_pos == String::npos)
 		return str;
 	return str.replace(start_pos, 1, to);
+}
+
+static bool starts_with(const std::string str, const std::string prefix) {
+	return ((prefix.size() <= str.size()) && std::equal(prefix.begin(), prefix.end(), str.begin()));
 }
 
 std::wstring simplifieDiacritics(const std::wstring &str) {
@@ -270,15 +275,17 @@ static void print_text(const std::string &line, int font, bool uni = false) {
 static void print_divider(int div, bool flipv = false) {
 }
 
-// "{div=3}{font=3}{ufont=4}Message to print{/ufont}{div=3,flipv}"
+// "{div=3}{font=3u}{font=4a}Message to print{/font}{/font}{div=3,flipv}"
 
 #define START_MARKER "{"
 #define END_MARKER "}"
 #define END_TAG "/"
 
-static void process_msg(const char *content) {
-	std::list<std::string> tag_stack;
+static void process_msg(const std::string &content) {
+	std::stack<std::string> tag_stack;
 	int pos = 0;
+	int font = 2; // default font
+	bool uni = false; // default ascii
 
 	while (pos < content.length()) {
 		int brk_pos = content.find(START_MARKER, pos);
@@ -286,60 +293,51 @@ static void process_msg(const char *content) {
 		if (brk_pos < 0)
 			brk_pos = content.length();
 		if (brk_pos > pos)
-			_append_log_msg(content.substr(pos, brk_pos - pos), fg, bg);
+			print_text(content.substr(pos, brk_pos - pos), font, uni);
 		if (brk_pos == content.length())
 			break; //nothing else to add
 
 		const int brk_end = content.find(END_MARKER, brk_pos + 1);
 
-		if (brk_end == -1) {
-			//no close, append rest of the text
-			_append_log_msg(content.substr(brk_pos, content.length() - brk_pos), fg, bg);
+		if (brk_end == -1) { // no close, append rest of the text
+			print_text(content.substr(brk_pos, content.length() - brk_pos), font, uni);
 			break;
 		}
 
 		std::string tag = content.substr(brk_pos + 1, brk_end - brk_pos - 1);
-		std::vector<std::string> split_tag_block = tag.split(" ", false);
 
-		if (tag.begins_with(END_TAG) && tag_stack.size()) {
-			bool tag_ok = tag_stack.size() && tag_stack.front()->get() == tag.substr(1, tag.length());
+		if (starts_with(tag, END_TAG) && tag_stack.size()) {
+			bool tag_ok = tag_stack.size() && tag_stack.top() == tag.substr(1, tag.length());
 
-			if (tag_stack.front()->get() == "fg")
-				fg = TextConsole::COLOR_DEFAULT;
-			if (tag_stack.front()->get() == "bg")
-				bg = TextConsole::COLOR_DEFAULT;
+			if (starts_with(tag_stack.top(), "font=")) {
+				std::string fnt = tag_stack.top().substr(5);
+				font = fnt[0] = '0';
+				if (fnt[1] == 'u' || fnt[1] == 'a') {
+					uni = fnt[1] == 'u';
+				}
+			}
 
 			if (!tag_ok) {
-				_append_log_msg("[" + tag, fg, bg);
+				print_text("[" + tag, font, uni);
 				pos = brk_end;
 				continue;
 			}
 
 			pos = brk_end + 1;
-			tag_stack.pop_front();
-
-		} else if (tag.begins_with("div=") || tag.begins_with("font=")) {
-			String col = tag.substr(3, tag.length());
-			int color_index = -1;
-
-			for (int c = 0; c < TextConsole::COLOR_COUNT; ++c) {
-				if (col == colors_value[c]) {
-					color_index = c;
-					break;
+			tag_stack.pop();
+		} else if (starts_with(tag, "div=")) {
+			int div = atoi(tag.substr(4, tag.length()).c_str());
+		} else if (starts_with(tag, "font=")) {
+			std::string fnt = tag.substr(5);
+			if (fnt.length() == 2) {
+				font = fnt[0] = '0';
+				if (fnt[1] == 'u' || fnt[1] == 'a') {
+					uni = fnt[1] == 'u';
 				}
 			}
 
-			if (color_index == -1) {
-				WARN_PRINT("Unknown color name: " + col);
-			} else {
-				if (tag.begins_with("fg="))
-					fg = TextConsole::ColorIndex(color_index);
-				else if (tag.begins_with("bg="))
-					bg = TextConsole::ColorIndex(color_index);
-			}
-
 			pos = brk_end + 1;
-			tag_stack.push_front(tag.substr(0, 2));
+			tag_stack.push(tag);
 		}
 	}
 }
