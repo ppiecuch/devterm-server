@@ -307,11 +307,13 @@ static void process_msg(const std::string &content) {
 		std::string tag = content.substr(brk_pos + 1, brk_end - brk_pos - 1);
 
 		if (starts_with(tag, END_TAG) && tag_stack.size()) {
+			printf(" |-> %s\n", tag.c_str());
+
 			bool tag_ok = tag_stack.size() && tag_stack.top() == tag.substr(1, tag.length());
 
 			if (starts_with(tag_stack.top(), "font=")) {
 				std::string fnt = tag_stack.top().substr(5);
-				font = fnt[0] = '0';
+				font = fnt[0] - '0';
 				if (fnt[1] == 'u' || fnt[1] == 'a') {
 					uni = fnt[1] == 'u';
 				}
@@ -326,13 +328,20 @@ static void process_msg(const std::string &content) {
 			pos = brk_end + 1;
 			tag_stack.pop();
 		} else if (starts_with(tag, "div=")) {
+			printf(" |-> %s\n", tag.c_str());
 			int div = atoi(tag.substr(4, tag.length()).c_str());
+			printf(" | |-> %d\n", div);
+			pos = brk_end + 1;
 		} else if (starts_with(tag, "font=")) {
+			printf(" |-> %s\n", tag.c_str());
 			std::string fnt = tag.substr(5);
+			printf(" | |-> %s\n", fnt.c_str());
 			if (fnt.length() == 2) {
-				font = fnt[0] = '0';
+				font = fnt[0] - '0';
+				printf(" | | |-> %d\n", font);
 				if (fnt[1] == 'u' || fnt[1] == 'a') {
 					uni = fnt[1] == 'u';
+					printf(" | | |-> %s\n", uni ? "uni" : "ascii");
 				}
 			}
 
@@ -344,6 +353,7 @@ static void process_msg(const std::string &content) {
 
 int main(int argc, char **argv) {
 	for (int i = 1; i < argc; i++) {
+		printf("Process msg. %s:\n", argv[1]);
 		process_msg(argv[i]);
 	}
 	return EXIT_SUCCESS;
