@@ -177,12 +177,13 @@ var (
 
 const prnt = "/tmp/DEVTERM_PRINTER_IN"
 const prntPageBreak = "\n\n\n\n\n\n\n\n\n\n"
+const prntDefFont = 0
 
 func processMsg(msg string) {
 	var lines []byte
 	pos := 0
-	font := 2    // default font
-	uni := false // default ascii
+	font := prntDefFont // default font
+	uni := false        // default ascii
 	tagStack := []string{}
 
 	for pos < len(msg) {
@@ -270,7 +271,7 @@ func processMsg(msg string) {
 	}
 
 	if len(lines) > 0 {
-		lines = append([]byte(prntFont2), lines...)
+		lines = append(append(prntFontAscii, prntFontInfo[prntDefFont].Codes...), lines...)
 		writeFile(prnt, lines)
 	}
 }
