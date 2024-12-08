@@ -315,8 +315,8 @@ static void process_msg(const std::string &content) {
 		if (brk_pos < 0)
 			brk_pos = content.length();
 		if (brk_pos > pos) {
-			const std::string text = content.substr(pos, brk_pos - pos);
 			lines.push_back(text);
+			const std::string text = content.substr(pos, brk_pos - pos);
 			printf(" |-> %s\n", text.c_str());
 		}
 		if (brk_pos == content.length())
@@ -326,8 +326,8 @@ static void process_msg(const std::string &content) {
 
 		if (brk_end == -1) { // no close, append rest of the text
 			const std::string text = content.substr(brk_pos, content.length() - brk_pos);
-			lines.push_back(content.substr(brk_pos, content.length() - brk_pos));
 			printf(" |-> %s\n", text.c_str());
+			lines.push_back(content.substr(brk_pos, content.length() - brk_pos));
 			break;
 		}
 
@@ -348,8 +348,8 @@ static void process_msg(const std::string &content) {
 
 			if (!tag_ok) {
 				const std::string text = "{" + tag;
-				lines.push_back(text);
 				printf(" |-> %s\n", text.c_str());
+				lines.push_back(text);
 				pos = brk_end;
 				continue;
 			}
@@ -358,6 +358,7 @@ static void process_msg(const std::string &content) {
 			tag_stack.pop();
 		} else if (starts_with(tag, "nl")) {
 			printf(" |-> %s\n", tag.c_str());
+			lines.push_back("\n");
 			pos = brk_end + 1;
 		} else if (starts_with(tag, "page")) {
 			printf(" |-> %s\n", tag.c_str());
@@ -377,6 +378,9 @@ static void process_msg(const std::string &content) {
 				}
 			}
 			lines.push_back(prnt_image);
+			lines.push_back(std::string(div_hdr, 5));
+			lines.push_back(std::string(div.pixels, div.data_size));
+			lines.push_back("\n);
 			pos = brk_end + 1;
 		} else if (starts_with(tag, "font=")) {
 			printf(" |-> %s\n", tag.c_str());
@@ -397,7 +401,7 @@ static void process_msg(const std::string &content) {
 	}
 	if (_exists(prnt)) {
 		if (!lines.empty()) {
-			lines.insert(lines.begin(), prnt_font0);
+			lines.insert(lines.begin(), prnt_font2);
 		}
 		for (const std::string &l : lines) {
 			write_file(prnt, l.c_str(), l.size());
