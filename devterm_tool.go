@@ -209,12 +209,15 @@ func processMsg(msg string) {
 
 		tag := msg[brkStart+1 : brkEnd]
 		if startsWith(tag, "nl") {
+			fmt.Printf(" |-> %s\n", tag)
 			lines = append(lines, '\n')
 			pos = brkEnd + 1
 		} else if startsWith(tag, "page") {
+			fmt.Printf(" |-> %s\n", tag)
 			lines = append(lines, prntPageBreak...)
 			pos = brkEnd + 1
 		} else if startsWith(tag, "selftest") {
+			fmt.Printf(" |-> %s\n", tag)
 			lines = append(lines, "\x12\x54"...)
 			pos = brkEnd + 1
 		} else if startsWith(tag, "div=") {
@@ -334,7 +337,7 @@ func main() {
 			startServer()
 		} else {
 			for _, arg := range os.Args[1:] {
-				fmt.Printf("Process msg: %s:\n", arg)
+				fmt.Printf("Process msg: %s\n", arg)
 				processMsg(arg)
 			}
 		}
