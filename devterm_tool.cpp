@@ -315,9 +315,9 @@ static void process_msg(const std::string &content) {
 		if (brk_pos < 0)
 			brk_pos = content.length();
 		if (brk_pos > pos) {
-			lines.push_back(text);
 			const std::string text = content.substr(pos, brk_pos - pos);
 			printf(" |-> %s\n", text.c_str());
+			lines.push_back(text);
 		}
 		if (brk_pos == content.length())
 			break; //nothing else to add
@@ -370,16 +370,22 @@ static void process_msg(const std::string &content) {
 			pos = brk_end + 1;
 		} else if (starts_with(tag, "div=")) {
 			printf(" |-> %s\n", tag.c_str());
-			int div = atoi(tag.substr(4, 5).c_str());
-			printf(" | |-> %d\n", div);
+			int d = atoi(tag.substr(4, 5).c_str());
+			printf(" | |-> %d\n", d);
 			if (tag[5] == ',') {
 				if (starts_with(tag.substr(6), "flipv")) {
 					printf(" | |-> flipv\n");
 				}
 			}
+			const embed_image_t div = dividers[d];
+			uint8_t div_hdr[5] = {
+				0,
+				uint8_t(div.width / 8), 0, // wL wH
+				uint8_t(div.height), 0, // hL hH
+			};
 			lines.push_back(prnt_image);
-			lines.push_back(std::string(div_hdr, 5));
-			lines.push_back(std::string(div.pixels, div.data_size));
+			lines.push_back(std::string((const char *)&div_hdr, 5));
+			lines.push_back(std::string((const char *)div.pixels, div.data_size));
 			lines.push_back("\n");
 			pos = brk_end + 1;
 		} else if (starts_with(tag, "font=")) {
