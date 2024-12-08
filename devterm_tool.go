@@ -304,7 +304,8 @@ func processMsg(msg string) {
 	}
 
 	if len(lines) > 0 {
-		lines = append(append(prntFontAscii, prntFontInfo[prntDefFont].Codes...), lines...)
+		lines = append(prntFontAscii, lines...)
+		lines = append(prntFontInfo[prntDefFont].Codes, lines...)
 		writeFile(prnt, lines)
 	}
 }
