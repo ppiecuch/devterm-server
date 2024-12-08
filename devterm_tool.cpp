@@ -359,17 +359,14 @@ static void process_msg(const std::string &content) {
 		} else if (starts_with(tag, "nl")) {
 			printf(" |-> %s\n", tag.c_str());
 			pos = brk_end + 1;
-			tag_stack.pop();
 		} else if (starts_with(tag, "page")) {
 			printf(" |-> %s\n", tag.c_str());
 			lines.push_back(prnt_page_break);
 			pos = brk_end + 1;
-			tag_stack.pop();
 		} else if (starts_with(tag, "selftest")) {
 			printf(" |-> %s\n", tag.c_str());
 			lines.push_back("\x12\x54");
 			pos = brk_end + 1;
-			tag_stack.pop();
 		} else if (starts_with(tag, "div=")) {
 			printf(" |-> %s\n", tag.c_str());
 			int div = atoi(tag.substr(4, 5).c_str());
