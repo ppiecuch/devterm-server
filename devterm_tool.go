@@ -268,26 +268,27 @@ func processMsg(msg string) {
 			fmt.Printf(" |-> %s\n", tag)
 			fnt := tag[5:]
 			fmt.Printf(" | |-> %s\n", fnt)
-			if len(fnt) == 2 {
+			if len(fnt) > 0 {
 				font, _ = strconv.Atoi(string(fnt[0]))
-				fmt.Printf(" | | |-> %d\n", font)
-				if fnt[1] == 'u' || fnt[1] == 'a' {
-					uni = fnt[1] == 'u'
-					fmt.Printf(" | | |-> %s\n", func() string {
-						if uni {
-							return "uni"
-						}
-						return "ascii"
-					}())
-					lines = append(append(func() []byte {
-						if uni {
-							return prntFontUni
-						}
-						return prntFontAscii
-					}(), prntFontInfo[font].Codes...), lines...)
-				} else {
-					lines = append(prntFontInfo[font].Codes, lines...)
+				if len(fnt) > 1 {
+					fmt.Printf(" | | |-> %d\n", font)
+					if fnt[1] == 'u' || fnt[1] == 'a' {
+						uni = fnt[1] == 'u'
+						fmt.Printf(" | | |-> %s\n", func() string {
+							if uni {
+								return "uni"
+							}
+							return "ascii"
+						}())
+						lines = append(func() []byte {
+							if uni {
+								return prntFontUni
+							}
+							return prntFontAscii
+						}(), lines...)
+					}
 				}
+				lines = append(prntFontInfo[font].Codes, lines...)
 			}
 			pos = brkEnd + 1
 			tagStack.Push(FontTag{Font: font, Uni: uni})
