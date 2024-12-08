@@ -256,6 +256,14 @@ func processMsg(msg string) {
 						}
 						return "ascii"
 					}())
+					lines = append(append(func() []byte {
+						if uni {
+							return prntFontUni
+						}
+						return prntFontAscii
+					}(), prntFontInfo[font].Codes...), lines...)
+				} else {
+					lines = append(prntFontInfo[font].Codes, lines...)
 				}
 			}
 			pos = brkEnd + 1
