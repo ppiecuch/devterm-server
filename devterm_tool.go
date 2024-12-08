@@ -179,12 +179,35 @@ const prnt = "/tmp/DEVTERM_PRINTER_IN"
 const prntPageBreak = "\n\n\n\n\n\n\n\n\n\n"
 const prntDefFont = 0
 
+type FontTag struct {
+	Font int
+	Uni  bool
+}
+
+// TagStack represents a stack of FontTag.
+type TagStack struct {
+	stack []FontTag
+}
+
+func (s *TagStack) Push(tag FontTag) {
+	s.stack = append(s.stack, tag)
+}
+
+func (s *TagStack) Pop() (FontTag, bool) {
+	if len(s.stack) == 0 {
+		return FontTag{}, false
+	}
+	tag := s.stack[len(s.stack)-1]
+	s.stack = s.stack[:len(s.stack)-1]
+	return tag, true
+}
+
 func processMsg(msg string) {
 	var lines []byte
 	pos := 0
 	font := prntDefFont // default font
 	uni := false        // default ascii
-	tagStack := []string{}
+	tagStack := TagStack{}
 
 	for pos < len(msg) {
 		brkStart := indexOf(msg, "{", pos)
@@ -267,10 +290,11 @@ func processMsg(msg string) {
 				}
 			}
 			pos = brkEnd + 1
-			tagStack = append(tagStack, tag)
+			tagStack.Push(FontTag{Font: font, Uni: uni})
 		} else if startsWith(tag, "/font") {
-			if len(tagStack) > 0 {
-				tagStack = tagStack[:len(tagStack)-1]
+			if tag, ok := tagStack.Pop(); ok {
+				font = tag.Font
+				uni = tag.Uni
 			}
 			pos = brkEnd + 1
 		} else {
