@@ -380,7 +380,7 @@ static void process_msg(const std::string &content) {
 			lines.push_back(prnt_image);
 			lines.push_back(std::string(div_hdr, 5));
 			lines.push_back(std::string(div.pixels, div.data_size));
-			lines.push_back("\n);
+			lines.push_back("\n");
 			pos = brk_end + 1;
 		} else if (starts_with(tag, "font=")) {
 			printf(" |-> %s\n", tag.c_str());
