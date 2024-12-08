@@ -327,7 +327,7 @@ func main() {
 		fmt.Printf("Usage:\n")
 		fmt.Printf("%s\n", filepath.Base(os.Args[0]))
 		fmt.Printf("  +- run embedded server at port 4400\n")
-		fmt.Printf("%s {div=3}{font=3u}{font=4a}Message to print{/font}{/font}{div=3,flipv}{nl}{page}\n", filepath.Base(os.Args[0]))
+		fmt.Printf("%s \"{div=3}{font=3u}{font=4a}Message to print{/font}{/font}{div=3,flipv}{nl}{page}\"\n", filepath.Base(os.Args[0]))
 		fmt.Printf("  +- print formatted message to printer\n")
 	} else {
 		if len(os.Args) == 1 {
