@@ -410,7 +410,7 @@ static void process_msg(const std::string &content) {
 
 int main(int argc, char **argv) {
 	for (int i = 1; i < argc; i++) {
-		printf("Process msg. %s:\n", argv[1]);
+		printf("Process msg: %s:\n", argv[1]);
 		process_msg(argv[i]);
 	}
 	return EXIT_SUCCESS;
