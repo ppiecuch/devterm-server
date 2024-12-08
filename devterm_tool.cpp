@@ -224,14 +224,34 @@ static bool write_file(const char *path, const void *data, int len) {
 const char *prnt_image = "\x1d\x76\x30"; // GS v 0 p wL wH hL hH d1…dk
 const char *prnt_grey_image = "\x1d\x76\x31"; // GS v 1 p wL wH hL hH d1…dk
 
-const char *prnt_uni = "\x1b\x21\x01";
-const char *prnt_ascii = "\x1b\x21\x00";
-const char *prnt_font3 = "\x1d\x21\x03";
-const char *prnt_font4 = "\x1d\x21\x04";
+const char *prnt_font_uni = "\x1b\x21\x01";
+const char *prnt_font_ascii = "\x1b\x21\x00";
 
-static void print_text_card(const std::string &line1, const std::string &line2, int d = 0) {
-	const char *prnt = "/tmp/DEVTERM_PRINTER_IN";
+struct prnt_f2ont_info_t {
+	const char codes[16];
+	struct {
+		unsigned char width;
+		unsigned char height;
+	} ascii_size, uni_size;
+} prnt_font_info[] = {
+	{ "\x1d\x21\x00", { 8, 16 }, { 12, 12 } },
+	{ "\x1d\x21\x01", { 5, 7 }, { 16, 16 } },
+	{ "\x1d\x21\x02", { 6, 12 }, { 18, 18 } },
+	{ "\x1d\x21\x03", { 7, 14 }, { 26, 26 } },
+	{ "\x1d\x21\x04", { 8, 16 }, { 32, 32 } },
+};
 
+const char *prnt_font0 = prnt_font_info[0].codes;
+const char *prnt_font1 = prnt_font_info[1].codes;
+const char *prnt_font2 = prnt_font_info[2].codes;
+const char *prnt_font3 = prnt_font_info[3].codes;
+const char *prnt_font4 = prnt_font_info[4].codes;
+
+const char *prnt = "/tmp/DEVTERM_PRINTER_IN";
+
+const char *prnt_page_break = "\n\n\n\n\n\n\n\n\n\n";
+
+static void print_text_card(const std::string &line1, const std::string &line2, int d = 0, bool print_dt = true) {
 	const embed_image_t div = dividers[d];
 	uint8_t div_hdr[5] = {
 		0,
@@ -246,19 +266,21 @@ static void print_text_card(const std::string &line1, const std::string &line2, 
 	write_file(prnt, "\n", 1);
 
 	// date
-	time_t now(time(NULL));
-	char buffer[80];
-	size_t buffer_sz = strftime(buffer, 80, "%Y/%m/%d %H:%M:%S", localtime(&now));
+	if (print_dt) {
+		time_t now(time(NULL));
+		char buffer[80];
+		size_t buffer_sz = strftime(buffer, 80, "%Y/%m/%d %H:%M:%S", localtime(&now));
 
-	write_file(prnt, prnt_ascii, 3);
-	write_file(prnt, prnt_font4, 3);
-	std::string padding((MAX_BYTES - buffer_sz) / 2, ' ');
-	write_file(prnt, padding.c_str(), padding.size());
-	write_file(prnt, buffer, buffer_sz);
-	write_file(prnt, "\n\n", 2);
+		write_file(prnt, prnt_font_ascii, 3);
+		write_file(prnt, prnt_font4, 3);
+		std::string padding((MAX_BYTES - buffer_sz) / 2, ' ');
+		write_file(prnt, padding.c_str(), padding.size());
+		write_file(prnt, buffer, buffer_sz);
+		write_file(prnt, "\n\n", 2);
+	}
 
 	// card
-	write_file(prnt, prnt_uni, 3);
+	write_file(prnt, prnt_font_uni, 3);
 	write_file(prnt, prnt_font4, 3);
 	if (!line1.empty())
 		write_file(prnt, line1.c_str(), line1.size());
@@ -266,20 +288,18 @@ static void print_text_card(const std::string &line1, const std::string &line2, 
 	if (!line2.empty())
 		write_file(prnt, line2.c_str(), line2.size());
 
-	write_file(prnt, "\n\n\n\n\n\n\n\n\n\n", 10);
+	write_file(prnt, prnt_page_break, strlen(prnt_page_break));
 }
 
-static void print_text(const std::string &line, int font, bool uni = false) {
-}
-
-static void print_divider(int div, bool flipv = false) {
-}
-
-// "{div=3}{font=3u}{font=4a}Message to print{/font}{/font}{div=3,flipv}"
+// "{div=3}{font=3u}{font=4a}Message to print{/font}{/font}{div=3,flipv}{nl}{page}"
 
 #define START_MARKER "{"
 #define END_MARKER "}"
 #define END_TAG "/"
+
+inline static bool _exists(const std::string &name) {
+	return (access(name.c_str(), F_OK) != -1);
+}
 
 static void process_msg(const std::string &content) {
 	std::stack<std::string> tag_stack;
@@ -287,20 +307,27 @@ static void process_msg(const std::string &content) {
 	int font = 2; // default font
 	bool uni = false; // default ascii
 
+	std::vector<std::string> lines;
+
 	while (pos < content.length()) {
 		int brk_pos = content.find(START_MARKER, pos);
 
 		if (brk_pos < 0)
 			brk_pos = content.length();
-		if (brk_pos > pos)
-			print_text(content.substr(pos, brk_pos - pos), font, uni);
+		if (brk_pos > pos) {
+			const std::string text = content.substr(pos, brk_pos - pos);
+			lines.push_back(text);
+			printf(" |-> %s\n", text.c_str());
+		}
 		if (brk_pos == content.length())
 			break; //nothing else to add
 
 		const int brk_end = content.find(END_MARKER, brk_pos + 1);
 
 		if (brk_end == -1) { // no close, append rest of the text
-			print_text(content.substr(brk_pos, content.length() - brk_pos), font, uni);
+			const std::string text = content.substr(brk_pos, content.length() - brk_pos);
+			lines.push_back(content.substr(brk_pos, content.length() - brk_pos));
+			printf(" |-> %s\n", text.c_str());
 			break;
 		}
 
@@ -320,17 +347,39 @@ static void process_msg(const std::string &content) {
 			}
 
 			if (!tag_ok) {
-				print_text("[" + tag, font, uni);
+				const std::string text = "{" + tag;
+				lines.push_back(text);
+				printf(" |-> %s\n", text.c_str());
 				pos = brk_end;
 				continue;
 			}
 
 			pos = brk_end + 1;
 			tag_stack.pop();
+		} else if (starts_with(tag, "nl")) {
+			printf(" |-> %s\n", tag.c_str());
+			pos = brk_end + 1;
+			tag_stack.pop();
+		} else if (starts_with(tag, "page")) {
+			printf(" |-> %s\n", tag.c_str());
+			lines.push_back(prnt_page_break);
+			pos = brk_end + 1;
+			tag_stack.pop();
+		} else if (starts_with(tag, "selftest")) {
+			printf(" |-> %s\n", tag.c_str());
+			lines.push_back("\x12\x54");
+			pos = brk_end + 1;
+			tag_stack.pop();
 		} else if (starts_with(tag, "div=")) {
 			printf(" |-> %s\n", tag.c_str());
-			int div = atoi(tag.substr(4, tag.length()).c_str());
+			int div = atoi(tag.substr(4, 5).c_str());
 			printf(" | |-> %d\n", div);
+			if (tag[5] == ',') {
+				if (starts_with(tag.substr(6), "flipv")) {
+					printf(" | |-> flipv\n");
+				}
+			}
+			lines.push_back(prnt_image);
 			pos = brk_end + 1;
 		} else if (starts_with(tag, "font=")) {
 			printf(" |-> %s\n", tag.c_str());
@@ -347,6 +396,14 @@ static void process_msg(const std::string &content) {
 
 			pos = brk_end + 1;
 			tag_stack.push(tag);
+		}
+	}
+	if (_exists(prnt)) {
+		if (!lines.empty()) {
+			lines.insert(lines.begin(), prnt_font0);
+		}
+		for (const std::string &l : lines) {
+			write_file(prnt, l.c_str(), l.size());
 		}
 	}
 }
