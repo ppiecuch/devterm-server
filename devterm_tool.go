@@ -273,7 +273,7 @@ func processMsg(msg string) {
 }
 
 func writeFile(filename string, data []byte) {
-	err := os.WriteFile(filename, data, 0644)
+	err := ioutil.WriteFile(filename, data, 0644)
 	if err != nil {
 		log.Fatalf("Failed to write to file: %v", err)
 	}
