@@ -252,23 +252,27 @@ func processMsg(msg string) {
 			d, _ := strconv.Atoi(tag[4:5])
 			fmt.Printf(" | |-> %d\n", d)
 			if len(tag) > 5 && tag[5] == ',' {
-				if startsWith(tag[6:], "flipv") {
-					fmt.Printf(" | |-> flipv\n")
-				}
-				if startsWith(tag[6:], "time") {
-					fmt.Printf(" | |-> time\n")
-					now := time.Now()
-					buffer := now.Format("2006/01/02 15:04:05")
-					bufferSz := len(buffer)
+				opts := strings.Split(tag, ",")
+				for _, opt := range opts {
+					fmt.Printf(" | |-> %s\n", opt)
+					if opt == "flipv" {
+						fmt.Printf(" | |-> flipv\n")
+					}
+					if opt == "time" {
+						fmt.Printf(" | |-> time\n")
+						now := time.Now()
+						buffer := now.Format("2006/01/02 15:04:05")
+						bufferSz := len(buffer)
 
-					lines = append(lines, prntFontAscii...)
-					lines = append(lines, prntFont4...)
+						lines = append(lines, prntFontAscii...)
+						lines = append(lines, prntFont4...)
 
-					paddingSize := (maxBytes - bufferSz) / 2
-					padding := strings.Repeat(" ", paddingSize)
-					lines = append(lines, padding...)
-					lines = append(lines, buffer...)
-					lines = append(lines, "\n\n"...)
+						paddingSize := (maxBytes - bufferSz) / 2
+						padding := strings.Repeat(" ", paddingSize)
+						lines = append(lines, padding...)
+						lines = append(lines, buffer...)
+						lines = append(lines, "\n\n"...)
+					}
 				}
 			}
 			div := dividers[d]
