@@ -252,7 +252,7 @@ func processMsg(msg string) {
 			d, _ := strconv.Atoi(tag[4:5])
 			fmt.Printf(" | |-> %d\n", d)
 			if len(tag) > 5 && tag[5] == ',' {
-				opts := strings.Split(tag, ",")
+				opts := strings.Split(tag[6:], ",")
 				for _, opt := range opts {
 					fmt.Printf(" | |-> %s\n", opt)
 					if opt == "flipv" {
