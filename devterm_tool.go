@@ -270,6 +270,7 @@ func processMsg(msg string) {
 			fmt.Printf(" | |-> %s\n", fnt)
 			if len(fnt) > 0 {
 				font, _ = strconv.Atoi(string(fnt[0]))
+				lines = append(prntFontInfo[font].Codes, lines...)
 				if len(fnt) > 1 {
 					fmt.Printf(" | | |-> %d\n", font)
 					if fnt[1] == 'u' || fnt[1] == 'a' {
@@ -288,7 +289,6 @@ func processMsg(msg string) {
 						}(), lines...)
 					}
 				}
-				lines = append(prntFontInfo[font].Codes, lines...)
 			}
 			pos = brkEnd + 1
 			tagStack.Push(FontTag{Font: font, Uni: uni})
