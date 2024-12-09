@@ -1,6 +1,6 @@
 #!/bin/bash
 
-./devterm_tool "{div=$((RANDOM % 10))}"
+./devterm_tool "{div=$((RANDOM % 10)),time}"
 for f in $(seq 0 4); do
     ./devterm_tool "{font=$f}Test font index $f{nl}"
 done

@@ -13,6 +13,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"time"
 )
 
 func stringReplaceAll(s, old, new string) string {
@@ -146,6 +147,8 @@ var (
 
 	prntFontUni   = []byte{0x1b, 0x21, 0x01}
 	prntFontAscii = []byte{0x1b, 0x21, 0x00}
+
+	maxBytes = 48
 )
 
 type FontSize struct {
@@ -252,6 +255,21 @@ func processMsg(msg string) {
 				if startsWith(tag[6:], "flipv") {
 					fmt.Printf(" | |-> flipv\n")
 				}
+				if startsWith(tag[6:], "time") {
+					fmt.Printf(" | |-> time\n")
+					now := time.Now()
+					buffer := now.Format("2006/01/02 15:04:05")
+					bufferSz := len(buffer)
+
+					lines = append(lines, prntFontAscii...)
+					lines = append(lines, prntFont4...)
+
+					paddingSize := (maxBytes - bufferSz) / 2
+					padding := strings.Repeat(" ", paddingSize)
+					lines = append(lines, padding...)
+					lines = append(lines, buffer...)
+					lines = append(lines, "\n\n"...)
+				}
 			}
 			div := dividers[d]
 			divHdr := []byte{
@@ -270,7 +288,6 @@ func processMsg(msg string) {
 			fmt.Printf(" | |-> %s\n", fnt)
 			if len(fnt) > 0 {
 				font, _ = strconv.Atoi(string(fnt[0]))
-				lines = append(prntFontInfo[font].Codes, lines...)
 				if len(fnt) > 1 {
 					fmt.Printf(" | | |-> %d\n", font)
 					if fnt[1] == 'u' || fnt[1] == 'a' {
@@ -281,14 +298,15 @@ func processMsg(msg string) {
 							}
 							return "ascii"
 						}())
-						lines = append(func() []byte {
+						lines = append(lines, func() []byte {
 							if uni {
 								return prntFontUni
 							}
 							return prntFontAscii
-						}(), lines...)
+						}()...)
 					}
 				}
+				lines = append(lines, prntFontInfo[font].Codes...)
 			}
 			pos = brkEnd + 1
 			tagStack.Push(FontTag{Font: font, Uni: uni})
